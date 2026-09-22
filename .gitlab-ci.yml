@@ -5,8 +5,18 @@
 # mirror    GitLab -> GitHub; skips silently when the secrets are absent
 #
 # Required CI/CD variables (Settings -> CI/CD -> Variables):
-#   GITHUB_REPO   (not secret)  e.g. owner/repo
-#   GITHUB_TOKEN  (Masked)      GitHub PAT with "repo" scope
+#   GITHUB_REPO            (not secret)  e.g. owner/repo
+#
+# Then ONE credential, whichever you prefer:
+#   GITHUB_DEPLOY_KEY_B64  (Masked)      base64 of an SSH private key registered
+#                                        as a WRITE deploy key on the GitHub repo.
+#                                        Narrowest option: one repository, write
+#                                        only. Base64 because GitLab masked
+#                                        variables must be single-line.
+#   GITHUB_TOKEN           (Masked)      GitHub PAT with "repo" scope.
+#
+# With neither credential set the mirror job prints a notice and succeeds, so a
+# fork without secrets stays green.
 
 stages: [validate, mirror]
 
