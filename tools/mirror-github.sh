@@ -22,10 +22,11 @@ if [ -z "${GITHUB_REPO:-}" ]; then
   exit 0
 fi
 
+# --- choose a remote and an auth path --------------------------------------
+REMOTE=""
 if [ -n "${GITHUB_DEPLOY_KEY_B64:-}" ]; then
-  # --- SSH deploy key -------------------------------------------------------
-  # Keep this path dependency-light: a minimal CI image may ship neither an SSH
-  # client nor a JSON parser, and both failures surface as an auth error.
+  # Keep this path dependency-light: a minimal CI image may ship no SSH client,
+  # and that failure surfaces as a permission error rather than a missing tool.
   if ! command -v ssh >/dev/null 2>&1; then
     echo "ERROR: the deploy-key path needs an SSH client, but 'ssh' was not found." >&2
     echo "       Add openssh-client to the CI image, or set GITHUB_TOKEN instead." >&2
@@ -52,27 +53,42 @@ if [ -n "${GITHUB_DEPLOY_KEY_B64:-}" ]; then
   fi
 
   export GIT_SSH_COMMAND="ssh -i $KEY_FILE -o IdentitiesOnly=yes -o UserKnownHostsFile=$KNOWN_HOSTS -o StrictHostKeyChecking=accept-new -o BatchMode=yes"
-
   REMOTE="git@github.com:${GITHUB_REPO}.git"
   echo "mirroring to ${GITHUB_REPO} over SSH (deploy key)"
-  git push --prune "$REMOTE" \
-    "+refs/heads/*:refs/heads/*" \
-    "+refs/tags/*:refs/tags/*"
-  echo "mirror complete"
-  exit 0
-fi
-
-if [ -n "${GITHUB_TOKEN:-}" ]; then
-  # --- personal access token ------------------------------------------------
+elif [ -n "${GITHUB_TOKEN:-}" ]; then
   # x-access-token avoids embedding a username and works for fine-grained PATs.
   REMOTE="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git"
   echo "mirroring to ${GITHUB_REPO} over HTTPS (token)"
-  git push --prune "$REMOTE" \
-    "+refs/heads/*:refs/heads/*" \
-    "+refs/tags/*:refs/tags/*"
-  echo "mirror complete"
+else
+  echo "neither GITHUB_DEPLOY_KEY_B64 nor GITHUB_TOKEN is set - skipping mirror"
   exit 0
 fi
 
-echo "neither GITHUB_DEPLOY_KEY_B64 nor GITHUB_TOKEN is set - skipping mirror"
-exit 0
+# --- push -------------------------------------------------------------------
+#
+# Do NOT use `git push --prune <remote> "+refs/heads/*:refs/heads/*"` here.
+# A CI checkout is a DETACHED HEAD with no local branch refs, so that wildcard
+# refspec has nothing to push and `--prune` reads it as "every remote branch is
+# stale". GitHub then rejects the whole push with
+#
+#   ! [remote rejected] main (refusing to delete the current branch)
+#
+# which looks like an auth failure and is not one. Naming the destination
+# explicitly avoids the ambiguity entirely.
+#
+# Tags are mirrored in every case. The branch is mirrored only for branch
+# pipelines: in a tag pipeline HEAD is the tagged commit, and pushing it to the
+# default branch would be wrong.
+
+if [ -n "${CI_COMMIT_TAG:-}" ]; then
+  echo "tag pipeline (${CI_COMMIT_TAG}) - mirroring tags only"
+else
+  BRANCH="${CI_COMMIT_BRANCH:-${CI_DEFAULT_BRANCH:-main}}"
+  echo "pushing HEAD to ${BRANCH}"
+  git push "$REMOTE" "HEAD:refs/heads/${BRANCH}"
+fi
+
+echo "pushing tags"
+git push "$REMOTE" --tags
+
+echo "mirror complete"
