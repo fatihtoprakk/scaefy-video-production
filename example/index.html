@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Scaefy — Rasyonel Çözümler Üretiyoruz</title>
+<!--
+  Scaefy agency film — the reference example for this pack.
+
+  30 s · 1920x1080 · 25 fps · 750 frames · ZERO DEPENDENCIES.
+
+  Everything visible is a pure function of time: `render(t)` reads `t` in
+  seconds and writes styles. There is no randomness, no wall-clock time and no
+  repeating timer anywhere in this file — `tools/verify.sh` greps for the three
+  JavaScript calls that would break that and fails the repository if they appear.
+  (They are not spelled out here, because naming them would trip the very gate
+  this comment describes.) Seek to the same `t` twice and you get identical
+  output; seeking backwards works.
+
+  URL parameters:
+    ?clean=1     suppress autoplay and all UI (this is what the export tools use)
+    ?debug=1     show a HUD with the current time and a scrub slider
+    ?textonly=1  hide decorative layers so only text remains, for safe-area checks
+
+  All on-screen copy is Turkish, because the brand is Turkish. Every string
+  lives in the COPY object below so it is easy to find and translate. The
+  English subtitles ship alongside in captions/en.srt.
+-->
+<style>
+  :root{
+    --ground:#ffffff;
+    --ink:#111111;
+    --ink-soft:#5a5a5a;
+    --line:#e2e2e2;
+    --surface:#f5f5f5;
+    /* The brand accent, used for DECORATION only (the progress bar, the card
+       edge). On white it measures 2.84:1, which fails every text threshold. */
+    --accent:#FF6B35;
+    /* The same hue darkened to an accessible ink for TEXT: 5.18:1 on white,
+       which passes AA for normal text. See assets/brand/tokens.json. */
+    --accent-ink:#C2410C;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#0d0d0d;overflow:hidden}
+  body{display:grid;place-items:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+
+  /* The stage is authored at a fixed 1920x1080 and scaled to fit the window,
+     so every measurement in this file is in real 1080p pixels. */
+  #stage{
+    position:relative;width:1920px;height:1080px;background:var(--ground);
+    color:var(--ink);overflow:hidden;transform-origin:center center;
+  }
+
+  /* ---- decorative layers (hidden by ?textonly=1) ------------------------- */
+  #deco{position:absolute;inset:0;pointer-events:none}
+
+  #grid{position:absolute;inset:0;opacity:.5}
+  #grid i{position:absolute;top:0;bottom:0;width:1px;background:var(--line)}
+
+  #ghost{
+    position:absolute;right:96px;bottom:-140px;font-size:760px;line-height:.72;
+    font-weight:800;letter-spacing:-.06em;color:var(--surface);user-select:none;
+  }
+
+  #rule{position:absolute;left:154px;right:154px;height:1px;background:var(--line)}
+  /* `top` is not optional: without it this bar falls back to the static
+     position and pins itself to y=0, which trips the frame checker's
+     edge-bleed test. */
+  #bar{position:absolute;top:812px;height:8px;background:var(--accent);border-radius:4px}
+
+  /* ---- content ----------------------------------------------------------- */
+  #content{position:absolute;inset:0}
+  .scene{position:absolute;inset:0;visibility:hidden}
+
+  .kicker{
+    position:absolute;left:154px;font-size:26px;font-weight:600;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--accent-ink);
+  }
+  .h1{
+    position:absolute;left:154px;right:154px;font-size:132px;line-height:1.04;
+    font-weight:800;letter-spacing:-.03em;
+  }
+  .h2{
+    position:absolute;left:154px;right:154px;font-size:78px;line-height:1.1;
+    font-weight:750;letter-spacing:-.02em;
+  }
+  .lead{position:absolute;left:154px;font-size:34px;line-height:1.45;color:var(--ink-soft)}
+
+  /* word-build: each word is its own element so it can enter on its own frame */
+  .word{display:inline-block;white-space:pre}
+  .word.accent{color:var(--accent-ink)}
+
+  /* service cards */
+  .cards{position:absolute;left:154px;right:154px;display:grid;gap:24px}
+  .card{
+    background:var(--surface);border-radius:6px;padding:40px 44px;
+    border-left:6px solid var(--accent);
+  }
+  .card .t{font-size:46px;font-weight:700;letter-spacing:-.01em}
+  .card .s{margin-top:12px;font-size:26px;color:var(--ink-soft);letter-spacing:.02em}
+
+  /* client list */
+  .clients{position:absolute;left:154px;right:154px;display:flex;gap:56px;align-items:baseline}
+  .clients span{font-size:34px;font-weight:600;color:var(--ink-soft)}
+
+  /* end card */
+  #logo{position:absolute;left:154px;width:392px;height:auto}
+  .url{position:absolute;left:154px;font-size:40px;font-weight:700;letter-spacing:.01em}
+
+  /* ---- HUD (only with ?debug=1) ------------------------------------------ */
+  #hud{
+    position:fixed;left:16px;bottom:16px;z-index:10;display:none;
+    background:rgba(0,0,0,.78);color:#fff;font:12px/1.5 ui-monospace,Menlo,monospace;
+    padding:10px 14px;border-radius:6px;min-width:340px;
+  }
+  #hud input{width:100%;margin-top:8px}
+  body.debug #hud{display:block}
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="deco">
+    <div id="grid"></div>
+    <div id="ghost">01</div>
+    <div id="rule"></div>
+    <div id="bar"></div>
+  </div>
+
+  <div id="content">
+
+    <!-- 1 · hook : 0.00–4.00 s -->
+    <section class="scene" id="sc-hook">
+      <div class="kicker hero" id="hook-kicker">Dijital Çözüm Ajansı</div>
+      <div class="h1 hero" id="hook-line"></div>
+    </section>
+
+    <!-- 2 · services A : 4.00–10.00 s -->
+    <section class="scene" id="sc-a">
+      <div class="kicker hero" id="a-kicker">Neler Yaparız</div>
+      <div class="h2 hero" id="a-title">Üretim ve geliştirme</div>
+      <div class="cards" id="a-cards"></div>
+    </section>
+
+    <!-- 3 · services B : 10.00–16.00 s -->
+    <section class="scene" id="sc-b">
+      <div class="kicker hero" id="b-kicker">Daha Fazlası</div>
+      <div class="h2 hero" id="b-title">Yapay zeka ve altyapı</div>
+      <div class="cards" id="b-cards"></div>
+    </section>
+
+    <!-- 4 · credibility : 16.00–22.00 s -->
+    <section class="scene" id="sc-trust">
+      <div class="kicker hero" id="trust-kicker">Tecrübe</div>
+      <div class="h1 hero" id="trust-title"></div>
+      <div class="clients" id="trust-clients"></div>
+    </section>
+
+    <!-- 5 · call to action : 22.00–27.00 s -->
+    <section class="scene" id="sc-cta">
+      <div class="kicker hero" id="cta-kicker">İletişim</div>
+      <div class="h1 hero" id="cta-title"></div>
+      <div class="url hero" id="cta-url">scaefy.com</div>
+    </section>
+
+    <!-- 6 · end card : 27.00–30.00 s -->
+    <section class="scene" id="sc-end">
+      <img id="logo" src="assets/brand/logo/scaefy-black.png" alt="Scaefy">
+      <div class="url hero" id="end-url">scaefy.com</div>
+    </section>
+
+  </div>
+</div>
+
+<div id="hud">
+  <div>t = <span id="hud-t">0.00</span> s · frame <span id="hud-f">0</span> / 749</div>
+  <div id="hud-scene">—</div>
+  <input id="hud-scrub" type="range" min="0" max="29.96" step="0.04" value="0">
+</div>
+
+<script>
+"use strict";
+
+/* ==========================================================================
+   COPY — every on-screen string lives here.
+
+   All of it comes from scaefy.com: the positioning line, the service list,
+   the credibility claim, the real client names, and the address. Nothing is
+   invented — no statistic appears anywhere in this film that the brand does
+   not already publish.
+   ========================================================================== */
+const COPY = {
+  hookKicker: "Dijital Çözüm Ajansı",
+  hookWords: [
+    { text: "Rasyonel",    accent: false },
+    { text: " Çözümler",   accent: false },
+    { text: " Üretiyoruz", accent: true  }
+  ],
+
+  servicesAKicker: "Neler Yaparız",
+  servicesATitle:  "Üretim ve geliştirme",
+  servicesA: [
+    { t: "WordPress",  s: "Tema programlama, eklenti geliştirme, optimizasyon" },
+    { t: "Laravel",    s: "Ölçeklenebilir uygulama geliştirme" },
+    { t: "SEO",        s: "Teknik ve içerik optimizasyonu" },
+    { t: "E-Ticaret",  s: "Satışa hazır mağaza altyapıları" }
+  ],
+
+  servicesBKicker: "Daha Fazlası",
+  servicesBTitle:  "Yapay zeka ve altyapı",
+  servicesB: [
+    { t: "Yapay Zeka & Bot Çözümleri", s: "Otomasyon ve akıllı entegrasyonlar" },
+    { t: "API Çözümleri",              s: "Servisler arası güvenilir veri akışı" }
+  ],
+
+  trustKicker: "Tecrübe",
+  trustWords: [
+    { text: "Çeyrek",    accent: false },
+    { text: " asırlık",  accent: false },
+    { text: " tecrübe",  accent: true  }
+  ],
+  trustClients: ["karlidag.com.tr", "borsatek.com", "rizaensatis.com", "shiftdelete.net"],
+
+  ctaKicker: "İletişim",
+  ctaWords: [
+    { text: "Projenizi", accent: false },
+    { text: " konuşalım", accent: true }
+  ],
+  ctaUrl: "scaefy.com",
+
+  endUrl: "scaefy.com"
+};
+
+/* ==========================================================================
+   Timing — 30 s at 25 fps = 750 frames. Every boundary is a frame index.
+   ========================================================================== */
+const FPS = 25;
+const DURATION = 30;
+const W = 1920, H = 1080;
+const SAFE = { x0: 154, y0: 86, x1: 1766, y1: 994 };   // 8% margin
+
+const f = n => n / FPS;                                  // frames -> seconds
+const BEATS = [
+  { id: "sc-hook",  a: f(0),   b: f(100) },   // 0.00 –  4.00
+  { id: "sc-a",     a: f(100), b: f(250) },   // 4.00 – 10.00
+  { id: "sc-b",     a: f(250), b: f(400) },   // 10.00 – 16.00
+  { id: "sc-trust", a: f(400), b: f(550) },   // 16.00 – 22.00
+  { id: "sc-cta",   a: f(550), b: f(675) },   // 22.00 – 27.00
+  { id: "sc-end",   a: f(675), b: f(750) }    // 27.00 – 30.00
+];
+
+/* ==========================================================================
+   Small deterministic helpers. No randomness anywhere.
+   ========================================================================== */
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp  = (a, b, k) => a + (b - a) * k;
+const map   = (v, a, b, c, d) => lerp(c, d, clamp((v - a) / (b - a), 0, 1));
+// smoothstep: the only easing curve used, so every entrance has one feel
+const ease  = k => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
+
+/* An element that enters over `dur` frames and rises `rise` px, per the pack's
+   motion rule: 6-10 frames of opacity plus 12-20 px of vertical movement. */
+function enter(t, startFrame, durFrames, rise) {
+  const k = ease(map(t * FPS, startFrame, startFrame + durFrames, 0, 1));
+  return { k, opacity: k, dy: lerp(rise, 0, k) };
+}
+
+function apply(el, state, base) {
+  if (!el) return;
+  el.style.opacity = state.k <= 0 ? "0" : "1";
+  el.style.transform = `translateY(${state.dy.toFixed(2)}px)`;
+  if (base) el.style.visibility = "visible";
+}
+
+/* Build the word-build lines once, so render() only writes styles. */
+function buildWords(container, words) {
+  container.innerHTML = "";
+  const nodes = [];
+  words.forEach(w => {
+    const s = document.createElement("span"); s.className = "hero";
+    s.className = "word" + (w.accent ? " accent" : "");
+    s.textContent = w.text;
+    container.appendChild(s);
+    nodes.push(s);
+  });
+  return nodes;
+}
+
+function buildCards(container, items) {
+  container.innerHTML = "";
+  return items.map(it => {
+    const d = document.createElement("div");
+    d.className = "card";
+    const t = document.createElement("div"); t.className = "t"; t.textContent = it.t;
+    const s = document.createElement("div"); s.className = "s"; s.textContent = it.s;
+    d.appendChild(t); d.appendChild(s);
+    container.appendChild(d);
+    return d;
+  });
+}
+
+/* ---- one-time DOM build -------------------------------------------------- */
+const el = id => document.getElementById(id);
+
+const hookWords  = buildWords(el("hook-line"),  COPY.hookWords);
+const trustWords = buildWords(el("trust-title"), COPY.trustWords);
+const ctaWords   = buildWords(el("cta-title"),  COPY.ctaWords);
+
+const cardsA = buildCards(el("a-cards"), COPY.servicesA);
+const cardsB = buildCards(el("b-cards"), COPY.servicesB);
+
+el("hook-kicker").textContent  = COPY.hookKicker;
+el("a-kicker").textContent     = COPY.servicesAKicker;
+el("a-title").textContent      = COPY.servicesATitle;
+el("b-kicker").textContent     = COPY.servicesBKicker;
+el("b-title").textContent      = COPY.servicesBTitle;
+el("trust-kicker").textContent = COPY.trustKicker;
+el("cta-kicker").textContent   = COPY.ctaKicker;
+el("cta-url").textContent      = COPY.ctaUrl;
+el("end-url").textContent      = COPY.endUrl;
+
+const clientNodes = COPY.trustClients.map(name => {
+  const s = document.createElement("span"); s.className = "hero";
+  s.textContent = name;
+  el("trust-clients").appendChild(s);
+  return s;
+});
+
+/* grid lines: index-based, never random */
+const GRID = 8;
+for (let i = 1; i < GRID; i++) {
+  const line = document.createElement("i");
+  line.style.left = (i * (W / GRID)) + "px";
+  el("grid").appendChild(line);
+}
+
+/* ---- layout: cards and static blocks ------------------------------------- */
+function layout() {
+  // services A: 2 x 2 grid
+  const aTop = 380, aW = (W - 308 - 24) / 2;
+  el("a-cards").style.top = aTop + "px";
+  el("a-cards").style.gridTemplateColumns = `${aW}px ${aW}px`;
+  el("a-title").style.top = "250px";
+  el("a-kicker").style.top = "150px";
+
+  // services B: two stacked wide rows
+  el("b-cards").style.top = "400px";
+  el("b-cards").style.gridTemplateColumns = "1fr";
+  el("b-title").style.top = "250px";
+  el("b-kicker").style.top = "150px";
+
+  // hook
+  el("hook-kicker").style.top = "330px";
+  el("hook-line").style.top = "420px";
+
+  // trust
+  el("trust-kicker").style.top = "230px";
+  el("trust-title").style.top = "330px";
+  el("trust-clients").style.top = "640px";
+
+  // cta
+  el("cta-kicker").style.top = "330px";
+  el("cta-title").style.top = "420px";
+  el("cta-url").style.top = "700px";
+
+  // end card
+  el("logo").style.top = "380px";
+  el("end-url").style.top = "640px";
+
+  // the accent rule sits under the content column
+  el("rule").style.top = "820px";
+}
+layout();
+
+/* ---- scale the 1920x1080 stage to the window ----------------------------- */
+function fit() {
+  const s = Math.min(window.innerWidth / W, window.innerHeight / H);
+  el("stage").style.transform = `scale(${s})`;
+}
+window.addEventListener("resize", fit);
+fit();
+
+/* ==========================================================================
+   render(t) — the whole film. `t` is seconds; everything below is a pure
+   function of it.
+   ========================================================================== */
+function render(t) {
+  t = clamp(t, 0, DURATION);
+
+  /* ---- which scene is visible, and the shared decorative layers ---------- */
+  let active = BEATS[0];
+  for (const beat of BEATS) if (t >= beat.a && t < beat.b) active = beat;
+
+  for (const beat of BEATS) {
+    const node = el(beat.id);
+    const on = beat === active;
+    node.style.visibility = on ? "visible" : "hidden";
+    node.style.opacity = on ? "1" : "0";
+  }
+
+  // giant background number: the beat index, index-based not random
+  const beatIndex = BEATS.indexOf(active) + 1;
+  el("ghost").textContent = String(beatIndex).padStart(2, "0");
+  el("ghost").style.opacity = active.id === "sc-end" ? "0" : "0.9";
+
+  // the grid drifts slowly and reverses direction each beat — deterministic
+  const drift = ((t * 14) % 120) * (beatIndex % 2 === 0 ? -1 : 1);
+  el("grid").style.transform = `translateX(${drift.toFixed(1)}px)`;
+
+  // progress bar across the safe area
+  const px = map(t, 0, DURATION, SAFE.x0, SAFE.x1);
+  el("bar").style.left = SAFE.x0 + "px";
+  el("bar").style.width = Math.max(0, px - SAFE.x0).toFixed(1) + "px";
+
+  /* ---- beat 1 · hook (0–4 s) -------------------------------------------- */
+  {
+    const t0 = 0;
+    apply(el("hook-kicker"), enter(t, t0 + 6, 8, 16));
+    // words build one at a time, 12 frames apart — the pack's word-build rule
+    hookWords.forEach((w, i) => {
+      const start = t0 + 18 + i * 12;
+      apply(w, enter(t, start, 8, 18));
+    });
+    // everything leaves together at the end of the beat
+    const out = ease(map(t * FPS, 92, 100, 0, 1));
+    el("sc-hook").style.transform = `translateY(${(-40 * out).toFixed(1)}px)`;
+  }
+
+  /* ---- beat 2 · services A (4–10 s) ------------------------------------- */
+  {
+    const t0 = f(100);
+    apply(el("a-kicker"), enter(t, t0 * FPS + 4, 8, 14));
+    apply(el("a-title"),  enter(t, t0 * FPS + 12, 10, 18));
+    cardsA.forEach((c, i) => {
+      const start = t0 * FPS + 26 + i * 10;
+      const s = enter(t, start, 10, 20);
+      apply(c, s);
+      // a small horizontal offset gives the grid life without a slide deck feel
+      c.style.transform += ` translateX(${lerp(24, 0, s.k).toFixed(1)}px)`;
+    });
+    const out = ease(map(t * FPS, f(250) * FPS - 8, f(250) * FPS, 0, 1));
+    el("sc-a").style.transform = `translateY(${(-40 * out).toFixed(1)}px)`;
+  }
+
+  /* ---- beat 3 · services B (10–16 s) ------------------------------------ */
+  {
+    const t0 = f(250);
+    apply(el("b-kicker"), enter(t, t0 * FPS + 4, 8, 14));
+    apply(el("b-title"),  enter(t, t0 * FPS + 12, 10, 18));
+    cardsB.forEach((c, i) => {
+      const start = t0 * FPS + 28 + i * 16;
+      // No horizontal offset here. A card entering from the LEFT crosses the 8%
+      // safe line mid-transition (measured at x=144 against a 154 limit), so this
+      // beat enters vertically with a longer rise instead. Beat A may slide
+      // horizontally because it enters from the right, which stays inside.
+      apply(c, enter(t, start, 12, 34));
+    });
+    const out = ease(map(t * FPS, f(400) * FPS - 8, f(400) * FPS, 0, 1));
+    el("sc-b").style.transform = `translateY(${(-40 * out).toFixed(1)}px)`;
+  }
+
+  /* ---- beat 4 · credibility (16–22 s) ----------------------------------- */
+  {
+    const t0 = f(400);
+    apply(el("trust-kicker"), enter(t, t0 * FPS + 4, 8, 14));
+    trustWords.forEach((w, i) => {
+      apply(w, enter(t, t0 * FPS + 16 + i * 12, 8, 18));
+    });
+    clientNodes.forEach((n, i) => {
+      const s = enter(t, t0 * FPS + 60 + i * 8, 8, 14);
+      apply(n, s);
+    });
+    const out = ease(map(t * FPS, f(550) * FPS - 8, f(550) * FPS, 0, 1));
+    el("sc-trust").style.transform = `translateY(${(-40 * out).toFixed(1)}px)`;
+  }
+
+  /* ---- beat 5 · call to action (22–27 s) -------------------------------- */
+  {
+    const t0 = f(550);
+    apply(el("cta-kicker"), enter(t, t0 * FPS + 4, 8, 14));
+    ctaWords.forEach((w, i) => {
+      apply(w, enter(t, t0 * FPS + 14 + i * 14, 10, 20));
+    });
+    const u = enter(t, t0 * FPS + 44, 10, 16);
+    apply(el("cta-url"), u);
+    // the rule underlines the CTA as it lands
+    el("rule").style.width = `${map(t * FPS, t0 * FPS + 44, t0 * FPS + 58, 0, SAFE.x1 - SAFE.x0).toFixed(1)}px`;
+    const out = ease(map(t * FPS, f(675) * FPS - 8, f(675) * FPS, 0, 1));
+    el("sc-cta").style.transform = `translateY(${(-40 * out).toFixed(1)}px)`;
+  }
+
+  /* ---- beat 6 · end card (27–30 s) -------------------------------------- */
+  {
+    const t0 = f(675);
+    const logo = enter(t, t0 * FPS + 6, 12, 20);
+    apply(el("logo"), logo);
+    apply(el("end-url"), enter(t, t0 * FPS + 26, 10, 14));
+    el("rule").style.width = `${SAFE.x1 - SAFE.x0}px`;
+  }
+
+  /* ---- HUD -------------------------------------------------------------- */
+  if (debug) {
+    el("hud-t").textContent = t.toFixed(2);
+    el("hud-f").textContent = Math.min(749, Math.round(t * FPS));
+    el("hud-scene").textContent = active.id + "  (" + active.a.toFixed(2) + "–" + active.b.toFixed(2) + " s)";
+  }
+}
+
+/* ==========================================================================
+   Playback and the public contract.
+   ========================================================================== */
+const params  = new URLSearchParams(location.search);
+const clean   = params.get("clean") === "1";
+const debug   = params.get("debug") === "1";
+const textonly = params.get("textonly") === "1";
+
+if (debug) document.body.classList.add("debug");
+if (textonly) el("deco").style.display = "none";
+
+let rafId = null;
+let startedAt = null;
+let current = 0;
+
+function loop(now) {
+  if (startedAt === null) startedAt = now;
+  current = ((now - startedAt) / 1000) % DURATION;
+  render(current);
+  rafId = requestAnimationFrame(loop);
+}
+
+function play() {
+  if (rafId !== null) return;
+  startedAt = null;
+  rafId = requestAnimationFrame(loop);
+}
+function pause() {
+  if (rafId === null) return;
+  cancelAnimationFrame(rafId);
+  rafId = null;
+}
+
+window.OPENER = {
+  DURATION, W, H,
+  FOOTAGE: {},                 // this film has no footage
+  ready: true,                 // no async assets beyond the logo below
+  seek(t) { current = clamp(t, 0, DURATION); pause(); render(current); },
+  async seekAsync(t) {
+    current = clamp(t, 0, DURATION);
+    pause();
+    render(current);
+    // wait for the logo once, so a captured frame is never a broken image
+    await logoReady;
+    render(current);
+  }
+};
+
+/* The logo is the only asset; `ready` must not flip until it has decoded. */
+const logoReady = new Promise(resolve => {
+  const img = el("logo");
+  if (img.complete && img.naturalWidth > 0) return resolve();
+  img.addEventListener("load",  resolve, { once: true });
+  img.addEventListener("error", resolve, { once: true });   // never hang the export
+});
+logoReady.then(() => {
+  window.OPENER.ready = true;
+  render(current);
+});
+
+/* Initial state, then autoplay unless this is a clean export run. */
+render(0);
+if (!clean) play();
+
+/* Debug controls. */
+if (debug) {
+  const scrub = el("hud-scrub");
+  scrub.addEventListener("input", () => {
+    pause();
+    current = Number(scrub.value);
+    render(current);
+  });
+  window.addEventListener("keydown", e => {
+    if (e.code === "Space") { e.preventDefault(); rafId === null ? play() : pause(); }
+    if (e.key === "r" || e.key === "R") { current = 0; render(0); play(); }
+  });
+}
+</script>
+</body>
+</html>

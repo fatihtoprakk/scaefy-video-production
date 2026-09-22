@@ -1,0 +1,28 @@
+; Banned-string blocklist — TEMPLATE
+;
+; HOW IT WORKS
+;   tools/verify.sh reads this file and scans the whole repository for every
+;   active pattern. A match anywhere OUTSIDE this file fails the gate. Use it
+;   to keep client names, client-specific values, and private vocabulary out of
+;   a public repository.
+;
+; FORMAT
+;   One pattern per line. Lines starting with `;` are comments. Matching is
+;   case-insensitive.
+;   The comment marker is `;` and NOT `#`, because hex colour values begin with
+;   `#` and must stay matchable.
+;
+; KEEP REAL CLIENT TERMS OUT OF THIS FILE
+;   This repository is public. Listing a client's real names here would leak the
+;   very strings the list exists to block — the blocklist would become the leak.
+;   Keep the real list in your private working copy and run the same check there
+;   before publishing. See the private-side checker in the project that owns
+;   this pack.
+;
+;   With every entry commented out this gate reports a WARNING, not a pass: the
+;   mechanism is installed but nothing is being enforced yet.
+;
+; EXAMPLE — generic placeholders, safe to keep as a format reference:
+; example-client-name
+; example-slogan-fragment
+; #EXAMPLE00

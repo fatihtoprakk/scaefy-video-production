@@ -1,0 +1,46 @@
+# --- dependencies ---------------------------------------------------------
+node_modules/
+.npm-cache/
+.pnpm-store/
+
+# --- browser cache (puppeteer downloads a shell per version) ---------------
+.puppeteer-cache/
+.tmp/
+
+# --- python ---------------------------------------------------------------
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- local ffmpeg build ---------------------------------------------------
+tools/bin/
+tools/vendor/
+
+# --- secrets --------------------------------------------------------------
+.secrets/
+.env
+.env.*
+!.env.example
+
+# --- render output --------------------------------------------------------
+# Lightweight review copies may be committed deliberately; masters never are.
+out/
+*.mp4
+*.mov
+*.mkv
+!out/versions/**/*.mp4
+
+# --- footage --------------------------------------------------------------
+# Frame sequences and source clips are large; fetch or rebuild them locally.
+media/archive/**/*.mp4
+**/footage/
+**/shots/
+**/shots-text/
+
+# --- OS / editor ----------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
