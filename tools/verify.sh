@@ -120,6 +120,11 @@ for p in pathlib.Path('.').rglob('*'):
         text = p.read_text(encoding='utf-8')
     except (UnicodeDecodeError, OSError):
         continue
+    # A language switcher names the other language in its own language, e.g.
+    # a link labelled with the Turkish word for Turkish. That is a navigation
+    # label rather than prose, so strip links to a sibling README before
+    # scanning; the rest of the file is still checked.
+    text = re.sub(r'^.*\]\(README\.[a-z]{2}\.md\).*$', '', text, flags=re.M)
     found = turkish.findall(text)
     if found:
         line = text[:text.index(found[0])].count('\n') + 1
