@@ -24,6 +24,14 @@ fi
 
 if [ -n "${GITHUB_DEPLOY_KEY_B64:-}" ]; then
   # --- SSH deploy key -------------------------------------------------------
+  # Keep this path dependency-light: a minimal CI image may ship neither an SSH
+  # client nor a JSON parser, and both failures surface as an auth error.
+  if ! command -v ssh >/dev/null 2>&1; then
+    echo "ERROR: the deploy-key path needs an SSH client, but 'ssh' was not found." >&2
+    echo "       Add openssh-client to the CI image, or set GITHUB_TOKEN instead." >&2
+    exit 1
+  fi
+
   KEY_FILE="$(mktemp)"
   KNOWN_HOSTS="$(mktemp)"
   # shellcheck disable=SC2064
@@ -32,12 +40,12 @@ if [ -n "${GITHUB_DEPLOY_KEY_B64:-}" ]; then
   printf '%s' "$GITHUB_DEPLOY_KEY_B64" | base64 -d > "$KEY_FILE"
   chmod 600 "$KEY_FILE"
 
-  # Prefer GitHub's published host keys. Fall back to accept-new when the runner
-  # cannot reach the metadata endpoint, so the job still works offline-ish.
-  if curl -fsSL --max-time 15 https://api.github.com/meta 2>/dev/null \
-       | python3 -c 'import json,sys; [print("github.com", k) for k in json.load(sys.stdin)["ssh_keys"]]' \
-       > "$KNOWN_HOSTS" 2>/dev/null && [ -s "$KNOWN_HOSTS" ]; then
-    echo "pinned GitHub host keys"
+  # Pin GitHub's real host keys with ssh-keyscan, which ships with the SSH
+  # client. Fall back to accept-new only when the scan cannot reach the network.
+  if command -v ssh-keyscan >/dev/null 2>&1 \
+     && ssh-keyscan -t rsa,ecdsa,ed25519 github.com > "$KNOWN_HOSTS" 2>/dev/null \
+     && [ -s "$KNOWN_HOSTS" ]; then
+    echo "pinned GitHub host keys via ssh-keyscan"
   else
     echo "note: could not pin GitHub host keys; using accept-new"
     : > "$KNOWN_HOSTS"
