@@ -106,6 +106,12 @@ description: One sentence on what it produces, then explicit "Use when..." trigg
 
 ## 4. Tool conventions
 
+`tools/` holds the **production tooling** the skills and docs reference — frame
+capture, frame checks, layout measurement, delivery QC, and the gate runner.
+**Release plumbing lives in `ci/`**, because it is never part of making a film and
+mixing the two makes `tools/` mean two things at once. `mirror-github.sh` is in
+`ci/` for exactly that reason.
+
 | Rule | Why |
 |---|---|
 | Resolve ffmpeg with `"$(tools/ffmpeg.sh)"` | It tests execution, not existence |

@@ -44,7 +44,7 @@ mirror:
     # fails with a bare "ssh: not found" that reads like an auth problem.
     - apk add --no-cache git bash curl openssh-client >/dev/null
   script:
-    - bash tools/mirror-github.sh
+    - bash ci/mirror-github.sh
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
     - if: $CI_COMMIT_TAG

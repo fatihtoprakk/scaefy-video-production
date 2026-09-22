@@ -149,15 +149,15 @@ SYNTAX_OK=1
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   bash -n "$f" || SYNTAX_OK=0
-done < <(find tools skills -name '*.sh' -type f 2>/dev/null)
+done < <(find tools skills ci -name '*.sh' -type f 2>/dev/null)
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   python3 -m py_compile "$f" || SYNTAX_OK=0
-done < <(find tools skills -name '*.py' -type f 2>/dev/null)
+done < <(find tools skills ci -name '*.py' -type f 2>/dev/null)
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   node --check "$f" >/dev/null || SYNTAX_OK=0
-done < <(find tools skills -name '*.mjs' -type f 2>/dev/null)
+done < <(find tools skills ci -name '*.mjs' -type f 2>/dev/null)
 find . -name '__pycache__' -type d -prune -exec rm -rf {} + 2>/dev/null || true
 [ "$SYNTAX_OK" = 1 ] && pass "shell, Python, and Node files parse" || fail "syntax error (see above)"
 
