@@ -103,8 +103,13 @@ skip_dirs = {'.git', 'node_modules', '__pycache__', '.puppeteer-cache', '.tmp', 
 # gate above still scans it, and the convention that the README's own prose is
 # English is kept by hand rather than enforced here.
 skip_dirs.add('example')
-# A blocklist must contain the terms it blocks.
-skip_files = {'tools/banned-strings.txt'}
+# Two file exemptions, each deliberate:
+#   tools/banned-strings.txt  a blocklist must contain the terms it blocks
+#   README.tr.md              the Turkish translation of the README. A translated
+#                             document is not pack prose written in the wrong
+#                             language; it is the same document in another language,
+#                             which is the whole point of shipping it.
+skip_files = {'tools/banned-strings.txt', 'README.tr.md'}
 hits = []
 for p in pathlib.Path('.').rglob('*'):
     if not p.is_file() or any(part in skip_dirs for part in p.parts):

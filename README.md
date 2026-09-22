@@ -1,5 +1,7 @@
 # Scaefy Video Production
 
+**English** · [Türkçe](README.tr.md)
+
 **A code-generated video production skill pack — engine-neutral, free at its core, and gated by measurements instead of opinions.**
 
 Your coding agent writes the film as code. A timeline renders every frame as a pure
@@ -7,9 +9,10 @@ function of time, stills are captured from a real browser, ffmpeg encodes, audio
 mixed, and the delivery passes a quality gate that fails loudly. No timeline editor,
 no keyframe dragging, no "looks good to me".
 
-> **Status: pre-release (v0.1.0 in progress).** Skills, tooling, docs, and CI are in
-> place and `tools/verify.sh` passes. The bundled example film is landing. Nothing is
-> published yet.
+> **v0.1.0** — 10 skills, a dependency-free 30-second example film verified in a real
+> browser, and a CI pipeline that runs every gate on each push.
+> [GitLab](https://gitlab.com/fatihtoprak/scaefy-video-production) (primary) ·
+> [GitHub](https://github.com/fatihtoprakk/scaefy-video-production) (mirror)
 
 ---
 
@@ -105,6 +108,64 @@ To use the skills with any agent that supports the
 ```bash
 npx skills add <this-repo>
 ```
+
+---
+
+## Try these prompts
+
+Paste any of these into your agent. Each one is phrased the way a person actually
+talks, not the way a manual reads — the skill descriptions are written to catch them.
+
+**Plan before spending.** The cheapest thing you can change is the edit.
+
+> Plan a 30-second launch video for our homepage. Give me a brief and a timed
+> animatic first — do not render anything until I approve the pacing.
+
+**Turn a site into a film.**
+
+> Turn this landing page into a 20-second tour that uses the site's own visuals.
+
+**Make a vertical cut that isn't a crop.**
+
+> There's a finished master in `out/`. Give me a 15-second 9:16 version. Recomp
+> it for portrait — if you can't tell me what a centre crop would cut off, you
+> haven't checked it.
+
+**Keep a character consistent across shots.**
+
+> Here are four product stills. Write me a look bible and show me the stills
+> before you generate any video from them.
+
+**Fix the sound, then prove it.**
+
+> The music is fighting the narration. Duck it under speech and hit −14 LUFS
+> integrated with true peak under −1 dBTP, then show me the measurement.
+
+**Captions that survive a muted feed.**
+
+> Add English subtitles and tell me the reading speed of every cue. Nothing above
+> 17 characters per second.
+
+**Just tell me what's wrong with this file.**
+
+> QC `out/final.mp4` against the 1080p delivery spec and list what fails.
+
+**More than one language.**
+
+> Take the Turkish film and give me an English-subtitled version without touching
+> the master.
+
+### What makes these prompts work
+
+The pack's skills route on **triggers**, not on exact wording. You do not need to
+name a skill. But three habits get better results:
+
+- **Ask for the cheap artifact first.** "Brief and animatic before you render"
+  costs minutes instead of hours when the plan is wrong.
+- **Ask for the measurement.** "Show me the number" turns an opinion into a check,
+  and `qc.py` already produces it.
+- **State the constraint, not the method.** "Recomp it, don't crop it" gets you a
+  designed portrait version; "make it vertical" gets you a centre crop.
 
 ---
 

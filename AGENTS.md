@@ -38,6 +38,9 @@ licensed content (see `THIRD_PARTY_NOTICES.md`).
   quotes that copy when it documents the beats. The whole directory is exempt from the
   automated language scan; the banned-string gate still scans it. The convention still
   holds by hand — the README's own prose is written in English.
+- **`README.tr.md` is also exempt**, because a translated document is not pack prose
+  written in the wrong language. Keep the English `README.md` canonical: change it
+  first, then bring the translation across.
 
 ### 2.2 No client leakage
 
